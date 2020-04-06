@@ -55,7 +55,8 @@ int log_file(const char*, ...);
 #define TICK_TIME 10000
 #define LOG_TO_FILE
 
-#ifdef LOG_TO_FILE
+//#ifdef LOG_TO_FILE
+#if 0
 #define LOG_MSG log_file
 #else
 #define LOG_MSG log_stdout

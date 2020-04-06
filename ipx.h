@@ -20,6 +20,9 @@
 #ifndef DOSBOX_IPX_H
 #define DOSBOX_IPX_H
 
+#include <stdint.h>
+#include "config.h"
+
 #ifdef IPX_DEBUGMSG
 #define LOG_IPX LOG_MSG
 #else
@@ -59,19 +62,22 @@
 #pragma pack(1)
 #endif
 
-// For Uint8 type
-#include <SDL/SDL_net.h>
+typedef uint8_t Uint8;
+typedef uint16_t Uint16;
+typedef uint32_t Uint32;
 
-struct PackedIP {
+
+
+typedef struct  {
 	Uint32 host;
 	Uint16 port;
-} GCC_ATTRIBUTE(packed);
+} GCC_ATTRIBUTE(packed) PackedIP;
 
-struct nodeType {
+typedef struct {
 	Uint8 node[6];
-} GCC_ATTRIBUTE(packed) ;
+} GCC_ATTRIBUTE(packed) nodeType;
 
-struct IPXHeader {
+typedef struct {
 	Uint8 checkSum[2];
 	Uint8 length[2];
 	Uint8 transControl; // Transport control
@@ -84,8 +90,8 @@ struct IPXHeader {
 			PackedIP byIP ;
 		} GCC_ATTRIBUTE(packed) addr;
 		Uint8 socket[2];
-	} dest, src;
-} GCC_ATTRIBUTE(packed);
+	} GCC_ATTRIBUTE(packed) dest, src;
+} GCC_ATTRIBUTE(packed) IPXHeader;
 
 struct fragmentDescriptor {
 	Bit16u offset;
@@ -93,58 +99,44 @@ struct fragmentDescriptor {
 	Bit16u size;
 };
 
-#define IPXBUFFERSIZE 1424
-
-class ECBClass {
-public:
-	RealPt ECBAddr;
-	bool isInESRList;
-   	ECBClass *prevECB;	// Linked List
-	ECBClass *nextECB;
-	
-	Bit8u iuflag;		// Need to save data since we are not always in
-	Bit16u mysocket;	// real mode
-
-	Bit8u* databuffer;	// received data is stored here until we get called
-	Bitu buflen;		// by Interrupt
-
-#ifdef IPX_DEBUGMSG 
-	Bitu SerialNumber;
-#endif
-
-	ECBClass(Bit16u segment, Bit16u offset);
-	Bit16u getSocket(void);
-
-	Bit8u getInUseFlag(void);
-
-	void setInUseFlag(Bit8u flagval);
-
-	void setCompletionFlag(Bit8u flagval);
-
-	Bit16u getFragCount(void);
-
-	bool writeData();
-	void writeDataBuffer(Bit8u* buffer, Bit16u length);
-
-	void getFragDesc(Bit16u descNum, fragmentDescriptor *fragDesc);
-	RealPt getESRAddr(void);
-
-	void NotifyESR(void);
-
-	void setImmAddress(Bit8u *immAddr);
-	void getImmAddress(Bit8u* immAddr);
-
-	~ECBClass();
-};
-
 // The following routines may not be needed on all systems.  On my build of SDL the IPaddress structure is 8 octects 
 // and therefore screws up my IPXheader structure since it needs to be packed.
-
-void UnpackIP(PackedIP ipPack, IPaddress * ipAddr);
-void PackIP(IPaddress ipAddr, PackedIP *ipPack);
 
 #ifdef _MSC_VER
 #pragma pack()
 #endif
+
+
+void  SDLNet_Write16(Uint16 value, void *areap)
+{
+    *(Uint16 *)(areap) = (value >> 8) |
+        ((value << 8) & 0xFF00);
+}
+
+void   SDLNet_Write32(Uint32 value, void *areap)
+{
+    *(Uint32 *)(areap) =
+        ((value << 24) & 0xFF000000) |
+        ((value << 8) & 0x00FF0000) |
+        ((value >> 8) & 0x0000FF00) |
+        ((value >> 24) & 0x000000FF);
+}
+
+Uint16 SDLNet_Read16(void *areap)
+{
+    return (*(Uint16*)areap >> 8) |
+        ((*(Uint16*)areap << 8) & 0xFF00);
+}
+
+Uint32 SDLNet_Read32(const void *areap)
+{
+
+    return
+        ((*(Uint32*)areap << 24) & 0xFF000000) |
+        ((*(Uint32*)areap << 8) & 0x00FF0000) |
+        ((*(Uint32*)areap >> 8) & 0x0000FF00) |
+        ((*(Uint32*)areap >> 24) & 0x000000FF);
+}
+
 
 #endif
